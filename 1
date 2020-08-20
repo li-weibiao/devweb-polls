@@ -1,0 +1,171 @@
+1.创建虚拟环境：
+virtualenv  /home/li/dj02                   #yum -y install virtualenv (没有就安装，检查用 virtualenv --version)
+
+2.激活虚拟环境：
+source dj02/bin/activate
+
+3.下载django:
+pip install django==1.11.2
+
+4.创建django创建一个项目：
+django-admin startproject demo
+
+5.用pycharm打开项目
+
+6.修改settings.py数据库连接：
+# Database
+# https://docs.djangoproject.com/en/1.11/ref/settings/#databases
+
+DATABASES = {
+'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'hw123',
+        'USER': 'root',
+        'PASSWORD': 'asuka1314',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+    }
+}
+
+
+迁移数据以及新建项目polls：
+ 1002  python manage.py makemigrations
+ 1003  python manage.py migrate
+ 1004  python manage.py createsuperuser
+ 1005  python manage.py startapp polls
+
+
+如果没有templates目录就自己创建一个，但要在settings.py里DIRS里要添加一个os.path.join(BASE_DIR, 'templates'）参数：
+ROOT_URLCONF = 'demo.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+7.demo/urls.py里修改参数：
+from django.conf.urls import url,include
+from django.contrib import admin
+urlpatterns = [
+    #url使用正则进行匹配,从http://x.x.x.x/后面开始匹配
+    url(r'^admin/', admin.site.urls),
+    url(r'^polls/', include('polls.urls')),
+  ]
+  
+ 8.在polls目录里添加urls.py文件，并添加内容：
+ from django.conf.urls import url
+from . import views
+#也可以写为这个形式： from polls import views
+
+urlpatterns = [
+    #从http://x.x.x.x/polls/后面匹配
+    #用户访问polls首页时,将会调用views.index函数
+    #给http://x.x.x.x/polls/起名，叫index
+    url(r'^$',views.index,name='index')
+]
+
+9.在views.py文件里添加内容：
+from django.shortcuts import render
+
+# Create your views here.
+#用户的请求将自动作为第一个参数发给函数，所以函数至少需要一个参数
+def index(request):
+    #render函数寻找名为index.html的模板文件，返回给用户
+    return render(request,'index.html')
+    
+10.在templates目录里添加index.html文件，注意，这个index.html是与前面步骤相对应的名字，例如8，9步：
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>投票首页</title>
+</head>
+<body>
+<h1>投票首页</h1>
+</body>
+</html>
+
+10.在polls/urls.py里继续添加匹配规则：
+urlpatterns = [
+    #从http://x.x.x.x/polls/后面匹配
+    #用户访问polls首页时,将会调用views.index函数
+    #给http://x.x.x.x/polls/起名，叫index
+    url(r'^$',views.index,name='index'),
+    #$前面/务必填写，它可以匹配http://x.x.x.x/polls/1
+    #也可以匹配http://x.x.x.x/polls/1/
+    #为\d+添加（），将会把\d+匹配到的内容，传递给detail作为参数，d在这里为数字
+    url(r'^(\d+)/$',views.detail,name='detail'),
+]
+    
+11.在polls/views.py里添加内容：
+def detail(request,question_id):
+    #render的字符，将以key=val的形式发给模板文件
+    #key在模板文件中用于变量名，val是变量的值
+    return render(request,'detail.html',{'question_id':question_id})
+
+12.在templates里添加detail.html文件：
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>投票详情</title>
+</head>
+<body>
+<h1>{{question_id}}号问题投票详情</h1>
+</body>
+</html>
+
+
+13.在polls/urls.py里添加：
+ url(r'^(\d+)/result/$',views.result,name='result')
+ 
+14.在polls/views.py里添加：
+def result(request,question_id):
+    return render(request,'result.html',{'question_id':question_id})
+    
+15.在templates里添加result.html:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>投票结果页</title>
+</head>
+<body>
+<h1>{{question_id}}投票结果</h1>
+</body>
+</html>
+
+16.创建模型polls/models.py:
+from django.db import models
+
+# Create your models here.
+class Question(models.Model):
+    question_text = models.CharField(max_length=200)
+    pub_date = models.DateTimeField()
+
+class Choice(models.Model):
+    choice_text = models.CharField(max_length=200)
+    votes = models.IntegerField(default=0)
+    q = models.ForeignKey(Question)
+    
+    
+ 17.重新将库加载进数据库(生成表）：
+  python manage.py makemigrations
+    python manage.py migrate
+    
+ 18.
+
+
+
+    
