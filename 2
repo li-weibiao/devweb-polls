@@ -1,0 +1,89 @@
+18 将模型注册到后台管理页面，polls/admin.py：
+from django.contrib import admin
+
+# Register your models here.
+#from polls.models import Question,Choice  也可以写成
+from .models import Question,Choice
+admin.site.register(Question)
+admin.site.register(Choice)
+
+19.访问http://x.x.x.x/admin/可以添加问题和选项了，此时添加问题，显示的都是Question Object,添加选项都显示为Choice Object.
+   修复此模型，需要为模型增加__str__方法，增加方法不用做数据迁移，即migrate,因为没有涉及字段改变，在polls/models.py里:
+   from django.db import models
+
+# Create your models here.
+class Question(models.Model):
+    question_text = models.CharField(max_length=200)
+    pub_date = models.DateTimeField()
+
+    def __str__(self):
+        return "问题：%s" % self.question_text
+
+class Choice(models.Model):
+    choice_text = models.CharField(max_length=200)
+    votes = models.IntegerField(default=0)
+    q = models.ForeignKey(Question)
+
+    def __str__(self):
+        return "%s=>%s"  % (self.q,self.choice_text)
+        
+        
+ (django01) [root@liyu demo]# python manage.py makemigrations
+Did you rename choice.q to choice.question (a ForeignKey)? [y/N] y
+Migrations for 'polls':
+  polls/migrations/0002_auto_20200820_2102.py
+    - Rename field q on choice to question
+(django01) [root@liyu demo]# python manage.py migrate
+System check identified some issues:
+
+WARNINGS:
+?: (mysql.W002) MySQL Strict Mode is not set for database connection 'default'
+        HINT: MySQL's Strict Mode fixes many data integrity problems in MySQL, such as data truncation upon insertion, by escalating warnings into errors. It is strongly recommended you activate it. See: https://docs.djangoproject.com/en/1.11/ref/databases/#mysql-sql-mode
+Operations to perform:
+  Apply all migrations: admin, auth, contenttypes, polls, sessions
+Running migrations:
+  Applying polls.0002_auto_20200820_2102... OK
+  
+  
+修改后：
+
+class Choice(models.Model):
+    choice_text = models.CharField(max_length=200)
+    votes = models.IntegerField(default=0)
+    question = models.ForeignKey(Question)
+
+    def __str__(self):
+        return "%s=>%s"  % (self.question,self.choice_text)
+
+        
+        
+20.API进入shell环境：
+ python manage.py shell
+ #导入模型
+ from polls.models import Question,Choice
+ #创建问题：方法一，直接创建实例
+ >>> q1 = Question(question_text='元旦放几天假?',pub_date='2019-12-15')
+ >>> q1.save
+ 
+ 方法二:使用objects管理器：
+ #get_or_create方法返回的是一个元组：（问题实例，true/false）,数据库中没有相关记录则创建，返回true,如果数据库中有记录则取出，返回false
+ >>> result1 = Question.objects.get_or_create(question_text='春节放几天假？',pub_date='2020-1-1')
+ 
+ #创建选项：方法一：直接创建实例
+ >>> c1 = Choice(choice_text='1天',question=q1)
+ >>> c1.save()
+ 方法二：通过objects管理器
+ >>> c_result1 = Choice.objects.get_or_create(choice_text='2天',question=result1)
+ 方法三：通过问题实例的choice_set管理器创建
+ 因为Question和Choice具有主外健约束，一个问题可以有很多选项，django为问题实例创建了名为xxxx_set的管理器（选项类名为Choice,管理器名为Choice_set)
+ >>> result1.choice_set.get_or_create(choice_text='3天')
+ or
+ >>> c_result2 = result1.choice_set.get_or_create(choice_text='3天')
+ 
+ 
+
+ 
+ 
+        
+        
+ 
